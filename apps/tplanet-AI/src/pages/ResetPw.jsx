@@ -28,7 +28,7 @@ const ResetPw = () => {
   });
   const [passwordMatch, setPasswordMatch] = useState(null); // null: 未檢查, true: 匹配, false: 不匹配
   const { t } = useTranslation();
-  const { primaryColor } = useTenantTheme();
+  const { primaryColor, contrastColor } = useTenantTheme();
 
   // 密碼規則驗證
   useEffect(() => {
@@ -228,10 +228,10 @@ const ResetPw = () => {
                   type="button"
                   className={`btn w-full h-12 rounded-xl font-medium transition-colors border-0 ${
                     passwordValidation.isValid && passwordMatch
-                      ? "text-white"
+                      ? ""
                       : "bg-gray-400 text-gray-200 cursor-not-allowed"
                   }`}
-                  style={passwordValidation.isValid && passwordMatch ? { backgroundColor: primaryColor } : {}}
+                  style={passwordValidation.isValid && passwordMatch ? { backgroundColor: primaryColor, color: contrastColor } : {}}
                   onClick={handleSubmit}
                   disabled={!passwordValidation.isValid || !passwordMatch}
                 >

@@ -76,7 +76,7 @@ export default function OcrTaskList({ tasks, onStartPrefill, onCancel, listRef }
                         href={t.cmsLink}
                         target="_blank"
                         rel="noreferrer"
-                        className="px-3 py-1.5 rounded bg-[var(--tenant-primary)] text-white text-xs hover:opacity-90"
+                        className="px-3 py-1.5 rounded bg-[var(--tenant-primary)] text-[var(--tenant-primary-contrast)] text-xs hover:opacity-90"
                       >
                         開啟專案
                       </a>

@@ -135,7 +135,7 @@ const SdgsWeight = ({ data }) => {
               dangerouslySetInnerHTML={{ __html: modalContent.body }}
             ></div>
             <button
-              className="mt-4 px-4 py-2 bg-[var(--tenant-primary)] text-white rounded-lg"
+              className="mt-4 px-4 py-2 bg-[var(--tenant-primary)] text-[var(--tenant-primary-contrast)] rounded-lg"
               onClick={() => setModalContent({ title: "", body: "" })}
             >
               Close

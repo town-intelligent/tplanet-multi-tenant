@@ -3,6 +3,7 @@
  */
 import { useEffect } from 'react';
 import { useTenant } from './TenantContext';
+import { getContrastColor } from './colorUtils';
 
 // CSS variable mapping from theme config
 const CSS_VAR_MAP = {
@@ -34,6 +35,7 @@ function applyThemeVariables(theme) {
   if (theme.primary_color) {
     root.style.setProperty('--tenant-primary-light', `${theme.primary_color}20`);
     root.style.setProperty('--tenant-primary-dark', theme.secondary_color || theme.primary_color);
+    root.style.setProperty('--tenant-primary-contrast', getContrastColor(theme.primary_color));
   }
 }
 

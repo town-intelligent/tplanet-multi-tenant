@@ -417,7 +417,7 @@ const BubbleMap = () => {
               </div>
               <button 
                 onClick={handleRetry}
-                className="px-4 py-2 bg-[var(--tenant-primary)] text-white rounded hover:opacity-90"
+                className="px-4 py-2 bg-[var(--tenant-primary)] text-[var(--tenant-primary-contrast)] rounded hover:opacity-90"
               >
                 {t("common.retry")}
               </button>

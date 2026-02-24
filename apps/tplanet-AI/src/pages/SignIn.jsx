@@ -19,7 +19,7 @@ export default function SignIn() {
   const [showPassword, setShowPassword] = useState(false);
   const { setIsAuthenticated } = useAuth();
   const { t } = useTranslation();
-  const { primaryColor, secondaryColor } = useTenantTheme();
+  const { primaryColor, secondaryColor, contrastColor } = useTenantTheme();
 
   const signin = async (formdata) => {
     setIsLoading(true);
@@ -160,8 +160,8 @@ export default function SignIn() {
             <div className="col-11 col-sm-5 p-0">
               <Button
                 type="submit"
-                className="btn btn-block w-full text-white border-0"
-                style={{ backgroundColor: primaryColor }}
+                className="btn btn-block w-full border-0"
+                style={{ backgroundColor: primaryColor, color: contrastColor }}
                 onClick={handleSubmit}
                 disabled={!isVerified}
               >

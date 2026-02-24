@@ -64,7 +64,7 @@ export default function ChatMessages({ messages, policyHit, isStreaming, onConfi
             <div
               className={`text-sm ${
                 msg.sender === "user"
-                  ? "bg-[var(--tenant-primary)] text-white"
+                  ? "bg-[var(--tenant-primary)] text-[var(--tenant-primary-contrast)]"
                   : "bg-white text-gray-900 border border-gray-200"
               } p-3 rounded-lg shadow-sm`}
             >
