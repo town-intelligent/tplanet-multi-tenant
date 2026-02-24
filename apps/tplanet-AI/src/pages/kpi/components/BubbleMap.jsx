@@ -8,6 +8,80 @@ import { useHosters, useDepartments } from "../../../utils/multi-tenant";
 // 預設顏色表
 const DEFAULT_COLORS = ['#744EC2', '#138DFF', '#D64550', '#6B007B', '#E66C37', '#FF8C00', '#D9B301', '#32CD32', '#12239E', '#E044A7', '#9370DB'];
 
+// TreeNode 組件（定義在 BubbleMap 外面，避免每次 render 重建導致 scroll 重置）
+const TreeNode = ({ node, checkedItems, onCheck, expandedNodes, onToggleExpand }) => {
+  const isChecked = checkedItems[node.name] || false;
+  const isExpanded = expandedNodes[node.name] || false;
+  const hasChildren = node.children && node.children.length > 0;
+
+  const handleCheck = () => {
+    onCheck(node, !isChecked);
+  };
+
+  return (
+    <div style={{ marginLeft: "1rem" }}>
+      <div style={{ display: "flex", alignItems: "center" }}>
+        <label style={{ display: "flex", alignItems: "center", cursor: "pointer" }}>
+          <input
+            type="checkbox"
+            checked={isChecked}
+            onChange={handleCheck}
+            style={{ marginRight: "0.5rem" }}
+          />
+          {node.name}
+        </label>
+        {hasChildren && (
+          <button
+            onClick={() => onToggleExpand(node.name)}
+            style={{
+              background: "none",
+              border: "none",
+              cursor: "pointer",
+              marginLeft: "0.5rem",
+              padding: "0"
+            }}
+          >
+            <svg
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+              stroke="#707070"
+              style={{
+                transform: isExpanded ? "rotate(180deg)" : "rotate(0deg)",
+                transition: "transform 0.2s ease-in-out",
+              }}
+            >
+              <path
+                d="M7 10L12 15L17 10"
+                stroke="#878787"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </button>
+        )}
+      </div>
+      {hasChildren && isExpanded && (
+        <div style={{ marginLeft: "1.5rem" }}>
+          {node.children.map((child, idx) => (
+            <TreeNode
+              key={idx}
+              node={child}
+              checkedItems={checkedItems}
+              onCheck={onCheck}
+              expandedNodes={expandedNodes}
+              onToggleExpand={onToggleExpand}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
 const BubbleMap = () => {
   // 狀態管理
   const [selectedYear, setSelectedYear] = useState("all");
@@ -207,80 +281,6 @@ const BubbleMap = () => {
       ...prev,
       [nodeName]: !prev[nodeName]
     }));
-  };
-
-  // TreeNode 組件
-  const TreeNode = ({ node, checkedItems, onCheck, expandedNodes, onToggleExpand }) => {
-    const isChecked = checkedItems[node.name] || false;
-    const isExpanded = expandedNodes[node.name] || false;
-    const hasChildren = node.children && node.children.length > 0;
-
-    const handleCheck = () => {
-      onCheck(node, !isChecked);
-    };
-
-    return (
-      <div style={{ marginLeft: "1rem" }}>
-        <div style={{ display: "flex", alignItems: "center" }}>
-          <label style={{ display: "flex", alignItems: "center", cursor: "pointer" }}>
-            <input
-              type="checkbox"
-              checked={isChecked}
-              onChange={handleCheck}
-              style={{ marginRight: "0.5rem" }}
-            />
-            {node.name}
-          </label>
-          {hasChildren && (
-            <button
-              onClick={() => onToggleExpand(node.name)}
-              style={{
-                background: "none",
-                border: "none",
-                cursor: "pointer",
-                marginLeft: "0.5rem",
-                padding: "0"
-              }}
-            >
-              <svg
-                width="24"
-                height="24"
-                viewBox="0 0 24 24"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-                stroke="#707070"
-                style={{
-                  transform: isExpanded ? "rotate(180deg)" : "rotate(0deg)",
-                  transition: "transform 0.2s ease-in-out",
-                }}
-              >
-                <path
-                  d="M7 10L12 15L17 10"
-                  stroke="#878787"
-                  strokeWidth="1.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-            </button>
-          )}
-        </div>
-        {hasChildren && isExpanded && (
-          <div style={{ marginLeft: "1.5rem" }}>
-            {node.children.map((child, idx) => (
-              <TreeNode
-                key={idx}
-                node={child}
-                checkedItems={checkedItems}
-                onCheck={onCheck}
-                expandedNodes={expandedNodes}
-                onToggleExpand={onToggleExpand}
-              />
-            ))}
-          </div>
-        )}
-      </div>
-    );
   };
 
   // PieChartIcon 組件
