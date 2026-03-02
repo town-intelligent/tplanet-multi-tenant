@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import ImageUpload from "../../../components/ImageUpload";
+import { getContrastColor } from "../../../utils/multi-tenant";
 
 const STEPS = [
   { id: 1, title: "基本資料", description: "設定站台 ID 與名稱" },
@@ -66,6 +67,7 @@ const SiteWizard = () => {
         tenantId: tenant.tenantId,
         name: tenant.name || "",
         adminEmail: (tenant.hosters && tenant.hosters[0]) || "",
+        existingHosters: tenant.hosters || [],
         primaryColor: tenant.primaryColor || "#1976d2",
         secondaryColor: tenant.secondaryColor || "#424242",
         logoUrl: tenant.logoUrl || "",
@@ -194,9 +196,12 @@ const SiteWizard = () => {
 
       const submitData = {
         ...formData,
-        hosters: [formData.adminEmail.trim()],
+        hosters: isEditMode
+          ? [formData.adminEmail.trim(), ...(formData.existingHosters || []).slice(1)]
+          : [formData.adminEmail.trim()],
       };
       delete submitData.adminEmail;
+      delete submitData.existingHosters;
       delete submitData.createSubdomain;
 
       const response = await fetch(url, {
@@ -417,14 +422,14 @@ const SiteWizard = () => {
         <p className="text-sm text-gray-600 mb-3">主題預覽</p>
         <div className="flex gap-4 items-center">
           <div
-            className="px-6 py-2 rounded text-white"
-            style={{ backgroundColor: formData.primaryColor }}
+            className="px-6 py-2 rounded"
+            style={{ backgroundColor: formData.primaryColor, color: getContrastColor(formData.primaryColor) }}
           >
             主要按鈕
           </div>
           <div
-            className="px-6 py-2 rounded text-white"
-            style={{ backgroundColor: formData.secondaryColor }}
+            className="px-6 py-2 rounded"
+            style={{ backgroundColor: formData.secondaryColor, color: getContrastColor(formData.secondaryColor) }}
           >
             次要按鈕
           </div>

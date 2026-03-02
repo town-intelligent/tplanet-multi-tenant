@@ -4,6 +4,7 @@
  */
 import { createContext, useContext, useState, useCallback, useMemo, useRef } from 'react';
 import { detectTenant, setTenantOverride } from './tenantDetector';
+import { getContrastColor } from './colorUtils';
 
 // Default tenant configuration
 const DEFAULT_CONFIG = {
@@ -43,9 +44,11 @@ export function useFeature(featureName) {
  */
 export function useTenantTheme() {
   const { config } = useTenant();
+  const primaryColor = config?.theme?.primary_color || '#3b82f6';
   return {
-    primaryColor: config?.theme?.primary_color || '#3b82f6',
+    primaryColor,
     secondaryColor: config?.theme?.secondary_color || '#1e40af',
+    contrastColor: getContrastColor(primaryColor),
   };
 }
 

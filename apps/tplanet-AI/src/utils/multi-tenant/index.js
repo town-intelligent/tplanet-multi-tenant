@@ -37,6 +37,7 @@ export {
   detectTenantFromStorage,
   setTenantOverride,
 } from './tenantDetector';
+export { getContrastColor } from './colorUtils';
 
 // Default export for convenience
 export { TenantProvider as default } from './TenantProvider';

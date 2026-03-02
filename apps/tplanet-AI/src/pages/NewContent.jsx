@@ -203,7 +203,7 @@ function NewsContent() {
               download
               target="_blank"
               rel="noopener noreferrer"
-              className="block w-full bg-[var(--tenant-primary)] text-white rounded-md px-6 py-4 hover:opacity-95 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[var(--tenant-primary)]"
+              className="block w-full bg-[var(--tenant-primary)] text-[var(--tenant-primary-contrast)] rounded-md px-6 py-4 hover:opacity-95 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[var(--tenant-primary)]"
             >
               <div className="flex items-center justify-center gap-3">
                 {/* 小相機/附件圖示（inline SVG，避免額外依賴） */}
@@ -277,7 +277,7 @@ function NewsContent() {
                       download
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="shrink-0 px-3 py-1 rounded bg-[var(--tenant-primary)] text-white hover:opacity-90"
+                      className="shrink-0 px-3 py-1 rounded bg-[var(--tenant-primary)] text-[var(--tenant-primary-contrast)] hover:opacity-90"
                     >
                       下載
                     </a>

@@ -76,7 +76,7 @@ export default function InputBar({
               disabled || isLoading || !input.trim()
                 ? "bg-gray-300 cursor-not-allowed"
                 : "bg-[var(--tenant-primary)] hover:opacity-90"
-            } text-white`}
+            } text-[var(--tenant-primary-contrast)]`}
           >
             {isLoading ? t("aiSecretary.sending") : t("aiSecretary.send")}
           </button>

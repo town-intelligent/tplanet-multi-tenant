@@ -21,7 +21,7 @@ const SignUp = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const { t } = useTranslation();
-  const { primaryColor } = useTenantTheme();
+  const { primaryColor, contrastColor } = useTenantTheme();
 
   const passwordRegex =
     /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$/;
@@ -216,8 +216,8 @@ const SignUp = () => {
             <div className="col-11 col-sm-5 px-0">
               <Button
                 type="button"
-                className="btn btn-block w-full text-white border-0"
-                style={{ backgroundColor: primaryColor }}
+                className="btn btn-block w-full border-0"
+                style={{ backgroundColor: primaryColor, color: contrastColor }}
                 onClick={handleSubmit}
                 disabled={!isVerified}
               >

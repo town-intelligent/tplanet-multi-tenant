@@ -394,7 +394,7 @@ const KPIList = () => {
       <div className="flex justify-around items-center mt-20">
         {/* 左：總投入經費（新台幣：元） */}
         <div className="flex flex-col items-center mt-10">
-          <p className="text-9xl text-[var(--tenant-primary)] rozha-one-regular">
+          <p className="text-9xl text-[var(--tenant-primary-dark)] rozha-one-regular">
             {formatCurrency(totalBudget)}
             <span className="text-5xl">{t("kpi.currency")}</span>
           </p>
@@ -418,7 +418,7 @@ const KPIList = () => {
               </option>
             ))}
           </Form.Select>
-          <p className="text-9xl text-[var(--tenant-primary)] rozha-one-regular">
+          <p className="text-9xl text-[var(--tenant-primary-dark)] rozha-one-regular">
             {formatCurrency(selectedDep ? selectedDepBudget : 0)}
             <span className="text-5xl">{t("kpi.currency")}</span>
           </p>

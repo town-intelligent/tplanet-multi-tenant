@@ -4,7 +4,7 @@ import { forgotPassword } from "../utils/Accounts";
 import { useTenantTheme } from "../utils/multi-tenant";
 
 const ForgetPw = () => {
-  const { primaryColor } = useTenantTheme();
+  const { primaryColor, contrastColor } = useTenantTheme();
   const [email, setEmail] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false); // 新增狀態控制
 
@@ -69,8 +69,8 @@ const ForgetPw = () => {
               <div className="col-11 col-sm-5 px-0">
                 <Button
                   type="button"
-                  className="btn btn-block w-full text-white border-0"
-                  style={{ backgroundColor: primaryColor }}
+                  className="btn btn-block w-full border-0"
+                  style={{ backgroundColor: primaryColor, color: contrastColor }}
                   onClick={handleSubmit}
                   disabled={isSubmitting}
                 >
