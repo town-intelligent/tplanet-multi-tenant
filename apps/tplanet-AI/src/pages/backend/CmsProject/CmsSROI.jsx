@@ -48,8 +48,8 @@ const fetchData = async () => {
     
     const meta = await Promise.race([metaPromise, timeoutPromise]);
     
-    setProject({ ...objProject, fileId: meta.file_id });
-    setVisible(meta.visible);
+    setProject({ ...objProject, fileId: meta.data.file_id });
+    setVisible(meta.data.visible);
     setRetryCount(0); // 重置重試計數
     console.log("Loading completed successfully");
   } catch (err) {
@@ -301,7 +301,7 @@ if (!project) return <div>No project found</div>;
                 id="iframe_sroi"
                 width="100%"
                 style={{ height: "50vh" }}
-                src={`https://docs.google.com/spreadsheets/d/${project.fileId}/edit?usp=sharing&rm=minimal`}
+                src={`https://docs.google.com/spreadsheets/d/${project.fileId}?headers=false&chrome=false&single=true&widget=false&rm=minimal`}
                 title="SROI Sheet"
               />
             </div>
