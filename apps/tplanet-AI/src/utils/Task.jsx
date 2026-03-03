@@ -41,7 +41,7 @@ export const getTaskInfo = async (uuid) => {
     }
 
     const data = await response.json();
-    return data;
+    return data?.data || data;
   } catch (error) {
     console.error("Error:", error);
     return {};
