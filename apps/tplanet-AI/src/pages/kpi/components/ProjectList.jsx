@@ -132,7 +132,7 @@ const ProjectList = ({
               to={`/content/${project.uuid}`}
               className="!no-underline text-black"
             >
-              <p className="text-xl text-[var(--tenant-primary)] font-bold">{project.name}</p>
+              <p className="text-xl text-[var(--tenant-primary-dark,#1e3a5f)] font-bold">{project.name}</p>
               <p>{t("project.projectOrg")}: {project.org}</p>
               <p>{t("project.projectTeam")}: {project.project_b}</p>
               <p>
