@@ -1,0 +1,15 @@
+{
+  "name": "tplanet-tenant-env-router",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "lint": "tsc -p tsconfig.json --noEmit"
+  },
+  "devDependencies": {
+    "typescript": "^5.8.2",
+    "wrangler": "^3.109.0"
+  }
+}
+
