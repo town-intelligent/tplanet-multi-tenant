@@ -6,6 +6,8 @@ import { useHosters } from "../../utils/multi-tenant";
 import { Row, Col, Card } from "react-bootstrap";
 import { Link, useParams } from "react-router-dom";
 import SdgIconsGenerator from "../../utils/sdgs/SdgsImg";
+import i18n from "../../utils/i18n";
+import { useTranslation } from "react-i18next";
 
 // 讀入 SDG 小圖示
 const loadImages = async (names, setState) => {
@@ -75,10 +77,10 @@ const generateProjectBlock = (project) => {
         <Card.Body>
           <Link to={`/content/${project.uuid}`} className="!no-underline text-black">
             <p className="text-xl text-[var(--tenant-primary)] font-bold">{project.name || ""}</p>
-            <p>永續企業: {project.project_a || ""}</p>
-            <p>地方團隊: {project.project_b || "（未標示）"}</p>
+            <p>{i18n.t("project.projectOrg")}: {project.project_a || ""}</p>
+            <p>{i18n.t("project.projectTeam")}: {project.project_b || "（未標示）"}</p>
             <p>
-              期間: <span className="font-bold">{displayPeriod(project.period)}</span>
+              {i18n.t("project.projectPeriod")}: <span className="font-bold">{displayPeriod(project.period)}</span>
             </p>
           </Link>
           <div className="flex flex-wrap gap-1">
@@ -108,6 +110,7 @@ const KpiFilter = () => {
   const [filteredProjects, setFilteredProjects] = useState([]);
   const [selectedSdg, setSelectedSdg] = useState(null);
   const { images } = useSdgImages();
+  const { t } = useTranslation();
   const siteHosters = useHosters();
 
   // 追蹤已載入的 hosters key
@@ -204,9 +207,9 @@ const KpiFilter = () => {
                   className="w-20 h-20 object-contain"
                 />
               )}
-              <span className="text-2xl font-bold">{selectedSdg.text}</span>
+              <span className="text-2xl font-bold">{t(`sdgData.${selectedSdg.id}.text`)}</span>
             </div>
-            <p className="text-lg font-bold ml-3">{selectedSdg.content}</p>
+            <p className="text-lg font-bold ml-3">{t(`sdgData.${selectedSdg.id}.content`)}</p>
           </div>
         )}
       </div>

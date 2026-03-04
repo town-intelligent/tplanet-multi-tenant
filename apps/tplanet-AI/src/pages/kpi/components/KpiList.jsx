@@ -331,7 +331,7 @@ const KPIList = () => {
                     
                     <Card.Body className="flex-1 flex flex-col justify-between p-3" style={{ zIndex: 2, position: 'relative' }}>
                       <Card.Text className="min-h-[3em] flex items-center justify-center text-center font-bold text-sm">
-                        {item.text}
+                        {t(`sdgData.${item.id}.text`)}
                       </Card.Text>
                       <div className="text-center mb-0">
                         <div className="d-flex align-items-center justify-content-center">

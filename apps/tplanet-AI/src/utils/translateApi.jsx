@@ -54,7 +54,7 @@ export async function translateOne(text, targetLang) {
   if (IN_FLIGHT.has(k)) return IN_FLIGHT.get(k);
 
   const p = (async () => {
-    const resp = await fetch(`${import.meta.env.VITE_HOST_API_TPLANET}/projects/translate`, {
+    const resp = await fetch(`${import.meta.env.VITE_HOST_URL_TPLANET}/api/projects/translate`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ text: src, target_lang: targetLang }),
@@ -63,7 +63,8 @@ export async function translateOne(text, targetLang) {
     if (!resp.ok) return src;
 
     const json = await resp.json();
-    const out = json?.translations?.[0]?.text ?? src;
+    const payload = json?.data ?? json;
+    const out = payload?.translations?.[0]?.text ?? src;
 
     setCache(k, out);
     return out;
