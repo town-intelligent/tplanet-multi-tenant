@@ -15,6 +15,7 @@ import SROI from "./SROI"; // 你現有的 SROI 組件
 import { getSroiData, getSroiDataMeta } from "../../../utils/sroiUtils";
 import { useTranslation } from "react-i18next";
 import TrHtml from "../../../utils/TrHtml";
+import { useScopeTr } from "../../../utils/TranslateScope";
 
 const API_BASE = (import.meta.env.VITE_HOST_URL_TPLANET || "").replace(/\/+$/, "");
 const resolveAssetUrl = (path) => {
@@ -37,6 +38,7 @@ export default function ProjectContent() {
   const [isDownloading, setIsDownloading] = useState(false); // 新增：用於追蹤下載狀態
   const [error, setError] = useState(null);
   const { t } = useTranslation();
+  const { tr, registerText } = useScopeTr();
 
   // 新增：分頁狀態（成果展現 / SROI）
   const [activeTab, setActiveTab] = useState("成果展現");
@@ -85,6 +87,13 @@ export default function ProjectContent() {
 
     fetchProject();
   }, [id]);
+
+  // 註冊 task 名稱以進行翻譯
+  useEffect(() => {
+    tasks.forEach((task) => {
+      if (task.name) registerText(task.name);
+    });
+  }, [tasks, registerText]);
 
   // 檢查附件是否存在
   useEffect(() => {
@@ -495,7 +504,7 @@ export default function ProjectContent() {
                           <div className="row mt-3">
                             <div className="col-md-6">
                               <p className="text-[var(--tenant-primary)] text-xl font-bold">
-                                {t("project.taskName")}: {task.name}
+                                {t("project.taskName")}: {tr(task.name || "")}
                               </p>
                             </div>
 
@@ -509,11 +518,11 @@ export default function ProjectContent() {
                           </div>
 
                           <p>{t("project.taskDate")}: {task.period}</p>
-                          <p
+                          <TrHtml
                             className="mt-3 mb-2"
                             id="overview"
-                            dangerouslySetInnerHTML={{ __html: task.overview }}
-                          ></p>
+                            html={task.overview}
+                          />
                         </div>
                       </div>
                     ))}
