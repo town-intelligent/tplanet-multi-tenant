@@ -105,7 +105,7 @@ export default function Str_Nav() {
             <Nav.Item id="index">
               <Nav.Link
                 href="/"
-                className="!text-black hover:!text-[var(--tenant-primary)]"
+                className="!text-black hover:!text-[var(--tenant-primary-dark,#1e3a5f)]"
                 title="Second Home"
                 style={{
                   opacity: scrollOpacity,
@@ -141,7 +141,7 @@ export default function Str_Nav() {
               <Nav.Item id="sustainable">
                 <Nav.Link
                   href="/kpi"
-                  className="!text-black hover:!text-[var(--tenant-primary)]"
+                  className="!text-black hover:!text-[var(--tenant-primary-dark,#1e3a5f)]"
                   title={t("nav.sustainable")}
                   style={{
                     opacity: scrollOpacity,
@@ -156,7 +156,7 @@ export default function Str_Nav() {
             <Nav.Item id="news_list">
               <Nav.Link
                 href="/news_list"
-                className="!text-black hover:!text-[var(--tenant-primary)]"
+                className="!text-black hover:!text-[var(--tenant-primary-dark,#1e3a5f)]"
                 title={t("nav.news")}
                 style={{
                   opacity: scrollOpacity,
@@ -227,7 +227,7 @@ export default function Str_Nav() {
                 />
                 <Nav.Link
                   href="/signin"
-                  className="px-0 !text-black hover:!text-[var(--tenant-primary)]"
+                  className="px-0 !text-black hover:!text-[var(--tenant-primary-dark,#1e3a5f)]"
                   title={t("nav.signin")}
                   style={{
                     opacity: scrollOpacity,
@@ -239,7 +239,7 @@ export default function Str_Nav() {
                 <span className="px-1 align-middle mb-0.5">/</span>
                 <Nav.Link
                   href="/signup"
-                  className="px-0 !text-black hover:!text-[var(--tenant-primary)]"
+                  className="px-0 !text-black hover:!text-[var(--tenant-primary-dark,#1e3a5f)]"
                   title={t("nav.signup")}
                   style={{
                     opacity: scrollOpacity,
