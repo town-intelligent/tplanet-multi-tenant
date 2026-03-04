@@ -302,7 +302,7 @@ export default function ProjectContent() {
             />
             <div className="row mt-4 pb-4 border-b border-[#D9D9D9]">
               <div className="col-md-6">
-                <h4 className="!text-[var(--tenant-primary)]" id="project_name">
+                <h4 className="!text-[var(--tenant-primary-dark,#1e3a5f)]" id="project_name">
                   {project.name}
                 </h4>
               </div>
@@ -503,7 +503,7 @@ export default function ProjectContent() {
                         <div className="col-12 mb-2">
                           <div className="row mt-3">
                             <div className="col-md-6">
-                              <p className="text-[var(--tenant-primary)] text-xl font-bold">
+                              <p className="text-[var(--tenant-primary-dark,#1e3a5f)] text-xl font-bold">
                                 {t("project.taskName")}: {tr(task.name || "")}
                               </p>
                             </div>
