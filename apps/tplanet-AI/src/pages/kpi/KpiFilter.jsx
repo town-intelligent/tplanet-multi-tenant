@@ -76,7 +76,7 @@ const generateProjectBlock = (project) => {
         </Link>
         <Card.Body>
           <Link to={`/content/${project.uuid}`} className="!no-underline text-black">
-            <p className="text-xl text-[var(--tenant-primary-dark,#1e3a5f)] font-bold">{project.name || ""}</p>
+            <p className="text-xl text-[var(--tenant-primary-dark,#1e3a5f)] font-bold truncate" title={project.name}>{project.name || ""}</p>
             <p>{i18n.t("project.projectOrg")}: {project.project_a || ""}</p>
             <p>{i18n.t("project.projectTeam")}: {project.project_b || "（未標示）"}</p>
             <p>
