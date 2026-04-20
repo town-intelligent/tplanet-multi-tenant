@@ -156,6 +156,16 @@ export function usePrivacyUrl() {
 }
 
 /**
+ * Hook to get tenant KPI page banner URL.
+ * Returns empty string when not configured, so caller can fall back to a bundled default.
+ * @returns {string} KPI banner URL (empty string if not set)
+ */
+export function useKpiBannerUrl() {
+  const context = useContext(TenantContext);
+  return context?.config?.kpiBannerUrl || '';
+}
+
+/**
  * Create initial state for tenant context.
  */
 function createInitialState() {

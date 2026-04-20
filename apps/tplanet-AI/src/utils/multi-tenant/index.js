@@ -22,7 +22,7 @@
  */
 
 // Context and hooks
-export { useTenant, useFeature, useTenantTheme, useHosters, useDepartments, useSuperusers, useDistricts, useRegions, useBrandName, useLogoUrl, useSocialLinks, usePrivacyUrl, TenantContext } from './TenantContext';
+export { useTenant, useFeature, useTenantTheme, useHosters, useDepartments, useSuperusers, useDistricts, useRegions, useBrandName, useLogoUrl, useSocialLinks, usePrivacyUrl, useKpiBannerUrl, TenantContext } from './TenantContext';
 export { useAccessLevel, ACCESS_LEVEL } from './useAccessLevel';
 
 // Providers

@@ -8,7 +8,7 @@ import KpiHeatMap from "./components/KpiHeatMap";
 import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { list_plans, plan_info } from "../../utils/Plan";
-import { useHosters } from "../../utils/multi-tenant";
+import { useHosters, useKpiBannerUrl } from "../../utils/multi-tenant";
 import { AnimatedSection } from "../../utils/useScrollAnimation";
 
 const KPI = () => {
@@ -21,9 +21,14 @@ const KPI = () => {
   const [selectedDep, setSelectedDep] = useState("all");
   const [selectedSdg, setSelectedSdg] = useState("all");
   const SITE_HOSTERS = useHosters();
+  const kpiBannerUrl = useKpiBannerUrl();
+  const bannerSrc = kpiBannerUrl
+    ? `${import.meta.env.VITE_HOST_URL_TPLANET}${kpiBannerUrl}`
+    : CsrProject;
 
   // Loading 狀態
   const [loading, setLoading] = useState(true);
+  const [loadProgress, setLoadProgress] = useState({ current: 0, total: 0 });
 
   // 分頁狀態
   const [currentPage, setCurrentPage] = useState(1);
@@ -67,9 +72,11 @@ const KPI = () => {
           mergedProjectList = Array.from(new Set([...mergedProjectList, ...projectUuids]));
           setObjListProjects({ result: "true", projects: mergedProjectList });
         }
+        setLoadProgress(prev => ({ ...prev, total: prev.total + projectUuids.length }));
         for (const uuid of projectUuids) {
           const projectInfo = await plan_info(uuid);
           allProjects.push({ uuid, ...projectInfo });
+          setLoadProgress(prev => ({ ...prev, current: prev.current + 1 }));
 
           if (projectInfo.period) {
             const startYear = new Date(
@@ -114,7 +121,7 @@ const KPI = () => {
             <div
               className="bg-cover mb-0 block bg-center h-48 md:h-80"
               style={{
-                backgroundImage: `url(${CsrProject})`,
+                backgroundImage: `url(${bannerSrc})`,
               }}
             ></div>
           </AnimatedSection>
@@ -151,6 +158,9 @@ const KPI = () => {
         <div className="flex flex-col items-center justify-center py-20">
           <div className="animate-spin rounded-full h-12 w-12 border-4 border-[var(--tenant-primary)] border-t-transparent mb-4"></div>
           <p className="text-gray-600">載入專案中...</p>
+          {loadProgress.total > 0 && (
+            <p className="text-gray-400 text-sm">{loadProgress.current} / {loadProgress.total} 筆</p>
+          )}
         </div>
       ) : (
         <AnimatedSection animation="fade-up">
