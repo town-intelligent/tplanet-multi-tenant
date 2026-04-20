@@ -100,6 +100,7 @@ def tenant_config(request):
         "regions": tenant.config.get("regions", {}),
         "socialLinks": tenant.config.get("social_links", {}),
         "privacyUrl": tenant.config.get("privacy_url", ""),
+        "kpiBannerUrl": tenant.config.get("kpi_banner_url", ""),
     })
 
 
