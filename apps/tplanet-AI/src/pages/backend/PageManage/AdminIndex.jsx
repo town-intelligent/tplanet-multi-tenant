@@ -265,6 +265,9 @@ const HomepageEditor = () => {
         setTenantConfigDirty(false);
         return true;
       }
+      // PUT failed: keep uploaded URLs in state so a retry only needs the PUT,
+      // and keep file/preview state so the admin can see what was staged.
+      setTenantConfig(configToSave);
       return false;
     } catch (e) {
       console.error("Failed to save tenant config:", e);
