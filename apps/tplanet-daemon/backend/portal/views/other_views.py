@@ -9,6 +9,7 @@ from django.conf import settings
 from portal.gmail import send_gmail
 from portal.manager import mockup_modify, mockup_fetch
 from portal.manager import news_post_create, news_post_list, news_post_get, news_post_delete
+from django_multi_tenant.views import _require_tenant_admin
 
 logger = logging.getLogger('tplanet')
 
@@ -22,7 +23,22 @@ def _response(**kwargs):
 
 @csrf_exempt
 def mockup_new(request):
-    """Create/modify mockup."""
+    """Create/modify mockup.
+
+    Auth: Bearer JWT required (tenant admin or YAML superuser). The email the
+    mockup is written under is ALWAYS derived from the authenticated user —
+    any client-supplied `email` POST field is ignored, so callers cannot
+    impersonate another hoster.
+    """
+    email, err = _require_tenant_admin(request)
+    if err:
+        return err
+
+    # Override any client-supplied email with JWT-derived one.
+    mutable_post = request.POST.copy()
+    mutable_post["email"] = email
+    request.POST = mutable_post
+
     result, description = mockup_modify(request)
     return _response(result=result, description=description)
 

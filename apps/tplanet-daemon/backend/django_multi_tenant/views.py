@@ -9,6 +9,9 @@ import re
 from pathlib import Path
 from typing import Any
 
+import jwt as _jwt
+from django.conf import settings as _settings
+from django.contrib.auth.models import User
 from django.http import HttpRequest, JsonResponse
 from django.views.decorators.http import require_GET, require_http_methods
 from django.views.decorators.csrf import csrf_exempt
@@ -19,6 +22,69 @@ logger = logging.getLogger(__name__)
 
 # Validation patterns
 HEX_COLOR_PATTERN = re.compile(r"^#[0-9A-Fa-f]{6}$")
+
+
+def _extract_bearer_token(request: HttpRequest) -> str | None:
+    """Extract JWT from Authorization header or JSON body {token}."""
+    auth = request.headers.get("Authorization", "")
+    if auth.startswith("Bearer "):
+        return auth[7:].strip() or None
+    try:
+        if request.content_type and "json" in request.content_type:
+            data = json.loads(request.body or b"{}")
+            return data.get("token") or data.get("jwt")
+    except Exception:
+        pass
+    return None
+
+
+def _require_tenant_admin(request: HttpRequest):
+    """
+    Verify caller is admin/superuser of the current tenant.
+
+    Returns (email, None) on success; (None, JsonResponse) on failure.
+    Admin = tenant's hosters[0]. Superuser = tenant YAML's superusers list.
+    """
+    token = _extract_bearer_token(request)
+    if not token:
+        return None, JsonResponse({"error": "Authentication required"}, status=401)
+
+    try:
+        payload = _jwt.decode(token, _settings.SECRET_KEY, algorithms=["HS256"])
+    except _jwt.ExpiredSignatureError:
+        return None, JsonResponse({"error": "Token expired"}, status=401)
+    except _jwt.InvalidTokenError:
+        return None, JsonResponse({"error": "Invalid token"}, status=401)
+
+    user_id = payload.get("user_id")
+    if not user_id:
+        return None, JsonResponse({"error": "Invalid token payload"}, status=401)
+
+    user = User.objects.filter(id=user_id).first()
+    if not user:
+        return None, JsonResponse({"error": "Token user not found"}, status=401)
+    email = user.email
+
+    tenant = get_current_tenant()
+    if not tenant:
+        return None, JsonResponse({"error": "No tenant context"}, status=400)
+
+    superusers = tenant.config.get("superusers", []) or []
+    if email in superusers:
+        return email, None
+
+    from django_multi_tenant.models import TenantConfig
+    db_config = TenantConfig.objects.filter(tenant_id=tenant.tenant_id).first()
+    hosters = (
+        db_config.hosters if db_config and db_config.hosters
+        else tenant.config.get("hosters", [])
+    ) or []
+    if hosters and hosters[0] == email:
+        return email, None
+
+    return None, JsonResponse(
+        {"error": "Admin/superuser access required"}, status=403
+    )
 
 
 def _validate_hex_color(value: str) -> bool:
@@ -85,7 +151,10 @@ def tenant_config(request):
         "tenantId": tenant.tenant_id,
         "name": db_config.name if db_config else tenant.name,
         "logoUrl": db_config.logo_url if db_config and db_config.logo_url else tenant.config.get("theme", {}).get("logo_url", ""),
-        "brandName": tenant.config.get("brand_name", tenant.name),
+        "brandName": (
+            db_config.brand_name if db_config and db_config.brand_name
+            else tenant.config.get("brand_name", tenant.name)
+        ),
         "features": db_config.features if db_config and db_config.features else tenant.config.get("features", {}),
         "theme": {
             **tenant.config.get("theme", {}),
@@ -98,9 +167,18 @@ def tenant_config(request):
         "superusers": tenant.config.get("superusers", []),
         "districts": tenant.config.get("districts", []),
         "regions": tenant.config.get("regions", {}),
-        "socialLinks": tenant.config.get("social_links", {}),
-        "privacyUrl": tenant.config.get("privacy_url", ""),
-        "kpiBannerUrl": tenant.config.get("kpi_banner_url", ""),
+        "socialLinks": (
+            db_config.social_links if db_config and db_config.social_links
+            else tenant.config.get("social_links", {})
+        ),
+        "privacyUrl": (
+            db_config.privacy_url if db_config and db_config.privacy_url
+            else tenant.config.get("privacy_url", "")
+        ),
+        "kpiBannerUrl": (
+            db_config.kpi_banner_url if db_config and db_config.kpi_banner_url
+            else tenant.config.get("kpi_banner_url", "")
+        ),
     })
 
 
@@ -112,10 +190,15 @@ def admin_config(request: HttpRequest) -> JsonResponse:
 
     GET: Returns current editable configuration
     PUT: Updates tenant configuration in database
+
+    Auth: Bearer JWT from hosters[0] (tenant admin) or YAML superusers list.
     """
+    email, auth_error = _require_tenant_admin(request)
+    if auth_error:
+        return auth_error
+
     tenant = get_current_tenant()
-    if not tenant:
-        return JsonResponse({"error": "No tenant context"}, status=400)
+    # _require_tenant_admin already verified tenant exists
 
     from django_multi_tenant.models import TenantConfig
 
@@ -127,6 +210,10 @@ def admin_config(request: HttpRequest) -> JsonResponse:
         return JsonResponse({
             "tenantId": tenant.tenant_id,
             "name": db_config.name if db_config else tenant.name,
+            "brandName": (
+                db_config.brand_name if db_config and db_config.brand_name
+                else yaml_config.get("brand_name", "")
+            ),
             "primaryColor": (
                 db_config.primary_color
                 if db_config
@@ -145,6 +232,18 @@ def admin_config(request: HttpRequest) -> JsonResponse:
             "bannerImage": db_config.banner_image if db_config else None,
             "sectionImages": db_config.section_images if db_config else {},
             "sectionDescriptions": db_config.section_descriptions if db_config else {},
+            "kpiBannerUrl": (
+                db_config.kpi_banner_url if db_config and db_config.kpi_banner_url
+                else yaml_config.get("kpi_banner_url", "")
+            ),
+            "socialLinks": (
+                db_config.social_links if db_config and db_config.social_links
+                else yaml_config.get("social_links", {})
+            ),
+            "privacyUrl": (
+                db_config.privacy_url if db_config and db_config.privacy_url
+                else yaml_config.get("privacy_url", "")
+            ),
             "features": (
                 db_config.features
                 if db_config and db_config.features
@@ -192,6 +291,17 @@ def admin_config(request: HttpRequest) -> JsonResponse:
             if not _validate_url(data["bannerImage"]):
                 errors.append("bannerImage must be a relative path or valid URL")
 
+        if "kpiBannerUrl" in data and data["kpiBannerUrl"]:
+            if not _validate_url(data["kpiBannerUrl"]):
+                errors.append("kpiBannerUrl must be a relative path or valid URL")
+
+        if "privacyUrl" in data and data["privacyUrl"]:
+            if not _validate_url(data["privacyUrl"]):
+                errors.append("privacyUrl must be a relative path or valid URL")
+
+        if "socialLinks" in data and not isinstance(data["socialLinks"], dict):
+            errors.append("socialLinks must be an object")
+
         if "features" in data and not isinstance(data["features"], dict):
             errors.append("features must be an object")
 
@@ -218,6 +328,8 @@ def admin_config(request: HttpRequest) -> JsonResponse:
         # Update fields if provided
         if "name" in data:
             db_config.name = _sanitize_string(data["name"], max_length=200) or db_config.name
+        if "brandName" in data:
+            db_config.brand_name = _sanitize_string(data["brandName"], max_length=200) or ""
         if "primaryColor" in data:
             db_config.primary_color = data["primaryColor"]
         if "secondaryColor" in data:
@@ -230,6 +342,12 @@ def admin_config(request: HttpRequest) -> JsonResponse:
             db_config.section_images = data["sectionImages"]
         if "sectionDescriptions" in data:
             db_config.section_descriptions = data["sectionDescriptions"]
+        if "kpiBannerUrl" in data:
+            db_config.kpi_banner_url = _sanitize_string(data["kpiBannerUrl"], max_length=2000) or ""
+        if "socialLinks" in data:
+            db_config.social_links = data["socialLinks"]
+        if "privacyUrl" in data:
+            db_config.privacy_url = _sanitize_string(data["privacyUrl"], max_length=2000) or ""
         if "features" in data:
             db_config.features = data["features"]
         if "departments" in data:
@@ -241,7 +359,7 @@ def admin_config(request: HttpRequest) -> JsonResponse:
 
         db_config.save()
 
-        logger.info(f"Updated tenant config: {tenant.tenant_id}")
+        logger.info(f"Updated tenant config: {tenant.tenant_id} by {email}")
 
         return JsonResponse({
             "success": True,
