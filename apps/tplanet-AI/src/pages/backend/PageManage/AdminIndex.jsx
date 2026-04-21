@@ -20,10 +20,14 @@ const HomepageEditor = () => {
   });
   const [tenantConfigDirty, setTenantConfigDirty] = useState(false);
 
-  // KPI banner upload state (handled separately since the file posts to mockup
-  // endpoint before the tenant-config PUT)
+  // File-upload staging state. These files are POSTed to /api/mockup/new
+  // together (single request) right before the /api/tenant/admin-config PUT
+  // in handleSave. The URLs returned by the backend become logoUrl /
+  // kpiBannerUrl on the TenantConfig row.
   const [kpiBannerFile, setKpiBannerFile] = useState(null);
   const [kpiBannerPreview, setKpiBannerPreview] = useState("");
+  const [logoFile, setLogoFile] = useState(null);
+  const [logoPreview, setLogoPreview] = useState("");
 
   // 新增：實際要上傳的檔案
   const [files, setFiles] = useState({});
@@ -150,10 +154,18 @@ const HomepageEditor = () => {
     setTenantConfigDirty(true);
   };
 
-  // KPI banner file selection (validation + preview only; actual upload in handleSave)
-  const handleKpiBannerSelect = (file) => {
+  // Shared file-select helper — validates type/size, stages file + preview.
+  // `extraTypes` lets logo upload also accept SVG.
+  const stageImageFile = (file, { setFile, setPreview, extraTypes = [] }) => {
     const maxSize = 5 * 1024 * 1024; // 5MB
-    const allowedTypes = ["image/jpeg", "image/png", "image/jpg", "image/gif", "image/webp"];
+    const allowedTypes = [
+      "image/jpeg",
+      "image/png",
+      "image/jpg",
+      "image/gif",
+      "image/webp",
+      ...extraTypes,
+    ];
     if (!allowedTypes.includes(file.type)) {
       alert(t("edit.cms_upload_format"));
       return;
@@ -163,15 +175,33 @@ const HomepageEditor = () => {
       return;
     }
     const reader = new FileReader();
-    reader.onload = (e) => setKpiBannerPreview(e.target.result);
+    reader.onload = (e) => setPreview(e.target.result);
     reader.readAsDataURL(file);
-    setKpiBannerFile(file);
+    setFile(file);
     setTenantConfigDirty(true);
   };
+
+  const handleKpiBannerSelect = (file) =>
+    stageImageFile(file, {
+      setFile: setKpiBannerFile,
+      setPreview: setKpiBannerPreview,
+    });
 
   const clearKpiBannerSelection = () => {
     setKpiBannerFile(null);
     setKpiBannerPreview("");
+  };
+
+  const handleLogoSelect = (file) =>
+    stageImageFile(file, {
+      setFile: setLogoFile,
+      setPreview: setLogoPreview,
+      extraTypes: ["image/svg+xml"], // logo commonly is SVG
+    });
+
+  const clearLogoSelection = () => {
+    setLogoFile(null);
+    setLogoPreview("");
   };
 
   // Save tenant config
@@ -187,11 +217,14 @@ const HomepageEditor = () => {
       let configToSave = { ...tenantConfig };
       const jwt = localStorage.getItem("jwt") || "";
 
-      if (kpiBannerFile) {
+      // Upload logo + KPI banner in a single mockup request (backend writes
+      // each file under /static/new_mockup/<jwt-email>/<field>.<ext> and
+      // returns the real URL per field).
+      if (logoFile || kpiBannerFile) {
         const form = new FormData();
-        // email is ignored by backend (derived from JWT), kept for parity
         form.append("email", localStorage.getItem("email") || "");
-        form.append("kpi-banner", kpiBannerFile, kpiBannerFile.name);
+        if (logoFile) form.append("logo", logoFile, logoFile.name);
+        if (kpiBannerFile) form.append("kpi-banner", kpiBannerFile, kpiBannerFile.name);
         const uploadResp = await fetch(
           `${import.meta.env.VITE_HOST_URL_TPLANET}/api/mockup/new`,
           {
@@ -205,13 +238,11 @@ const HomepageEditor = () => {
           return false;
         }
         const uploadObj = await uploadResp.json();
-        const uploadedUrl = uploadObj?.description?.["kpi-banner"];
-        if (uploadedUrl) {
-          configToSave = { ...configToSave, kpiBannerUrl: uploadedUrl };
-        }
-        // Note: we do NOT clear kpiBannerFile / preview here yet — only after
-        // the subsequent PUT succeeds, otherwise a failed PUT would lose the
-        // user's selection.
+        const newLogoUrl = uploadObj?.description?.logo;
+        const newKpiUrl = uploadObj?.description?.["kpi-banner"];
+        if (newLogoUrl) configToSave = { ...configToSave, logoUrl: newLogoUrl };
+        if (newKpiUrl) configToSave = { ...configToSave, kpiBannerUrl: newKpiUrl };
+        // Clear file state only after the PUT below succeeds.
       }
 
       const response = await fetch(
@@ -229,9 +260,14 @@ const HomepageEditor = () => {
         setTenantConfig(configToSave);
         setKpiBannerFile(null);
         setKpiBannerPreview("");
+        setLogoFile(null);
+        setLogoPreview("");
         setTenantConfigDirty(false);
         return true;
       }
+      // PUT failed: keep uploaded URLs in state so a retry only needs the PUT,
+      // and keep file/preview state so the admin can see what was staged.
+      setTenantConfig(configToSave);
       return false;
     } catch (e) {
       console.error("Failed to save tenant config:", e);
@@ -468,32 +504,94 @@ const HomepageEditor = () => {
           )}
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* 站台名稱 */}
+          {/* 站台名稱 — bound to brandName (footer/品牌顯示用)。
+              DB TenantConfig.name 仍由 SiteWizard / superuser 管，這裡不動。 */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               站台名稱
             </label>
             <input
               type="text"
-              value={tenantConfig.name}
-              onChange={(e) => updateTenantConfig("name", e.target.value)}
+              value={tenantConfig.brandName}
+              onChange={(e) => updateTenantConfig("brandName", e.target.value)}
               placeholder="輸入站台名稱"
               className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             />
           </div>
 
-          {/* Logo URL */}
+          {/* Logo — 上傳（PNG/SVG/JPG/GIF/WebP） */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Logo URL
+              Logo
+              <span className="ml-1 text-xs text-gray-400">
+                (建議 SVG 或透明背景 PNG)
+              </span>
             </label>
-            <input
-              type="text"
-              value={tenantConfig.logoUrl}
-              onChange={(e) => updateTenantConfig("logoUrl", e.target.value)}
-              placeholder="/static/images/logo.svg"
-              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            />
+            <div className="flex gap-3 items-start">
+              <div className="flex-shrink-0 w-20 h-20 bg-gray-100 rounded border border-gray-200 overflow-hidden flex items-center justify-center">
+                {logoPreview ? (
+                  <img
+                    src={logoPreview}
+                    alt="Logo preview"
+                    className="object-contain h-full w-full"
+                  />
+                ) : tenantConfig.logoUrl ? (
+                  <img
+                    src={
+                      tenantConfig.logoUrl.startsWith("http")
+                        ? tenantConfig.logoUrl
+                        : `${import.meta.env.VITE_HOST_URL_TPLANET}${tenantConfig.logoUrl}`
+                    }
+                    alt="Logo"
+                    className="object-contain h-full w-full"
+                    onError={(e) => {
+                      e.currentTarget.style.display = "none";
+                    }}
+                  />
+                ) : (
+                  <span className="text-xs text-gray-400">尚未設定</span>
+                )}
+              </div>
+              <div className="flex-1">
+                <div className="flex gap-2 items-center">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      document.getElementById("logo-upload").click()
+                    }
+                    className="bg-[#317EE0] text-white px-4 py-2 rounded hover:bg-blue-600 text-sm"
+                  >
+                    選擇 Logo 上傳
+                  </button>
+                  {logoFile && (
+                    <>
+                      <span className="text-xs text-gray-500 truncate max-w-[140px]">
+                        {logoFile.name}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={clearLogoSelection}
+                        className="text-sm text-gray-500 hover:text-gray-700"
+                      >
+                        取消選擇
+                      </button>
+                    </>
+                  )}
+                  <input
+                    id="logo-upload"
+                    type="file"
+                    accept="image/png,image/svg+xml,image/jpeg,image/gif,image/webp"
+                    className="hidden"
+                    onChange={(e) =>
+                      e.target.files[0] && handleLogoSelect(e.target.files[0])
+                    }
+                  />
+                </div>
+                <p className="mt-1 text-xs text-gray-500">
+                  儲存後上傳並自動更新（副檔名以實際檔案為準）。
+                </p>
+              </div>
+            </div>
           </div>
 
           {/* 主色 */}
@@ -562,23 +660,6 @@ const HomepageEditor = () => {
         <div className="mt-6 pt-6 border-t border-gray-200">
           <h3 className="text-lg font-semibold mb-4">品牌 / 社群 / 隱私</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* 品牌名稱 */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                品牌名稱
-                <span className="ml-1 text-xs text-gray-400">
-                  (footer 顯示，留空則沿用站台名稱)
-                </span>
-              </label>
-              <input
-                type="text"
-                value={tenantConfig.brandName}
-                onChange={(e) => updateTenantConfig("brandName", e.target.value)}
-                placeholder="Second Home"
-                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              />
-            </div>
-
             {/* 隱私權政策 URL */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
