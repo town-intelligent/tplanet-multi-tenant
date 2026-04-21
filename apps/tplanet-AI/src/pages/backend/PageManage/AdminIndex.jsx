@@ -185,30 +185,35 @@ const HomepageEditor = () => {
   const saveTenantConfig = async () => {
     try {
       let configToSave = { ...tenantConfig };
+      const jwt = localStorage.getItem("jwt") || "";
 
       if (kpiBannerFile) {
         const form = new FormData();
-        form.append("email", localStorage.getItem("email"));
+        // email is ignored by backend (derived from JWT), kept for parity
+        form.append("email", localStorage.getItem("email") || "");
         form.append("kpi-banner", kpiBannerFile, kpiBannerFile.name);
         const uploadResp = await fetch(
           `${import.meta.env.VITE_HOST_URL_TPLANET}/api/mockup/new`,
-          { method: "POST", body: form }
+          {
+            method: "POST",
+            body: form,
+            headers: jwt ? { Authorization: `Bearer ${jwt}` } : {},
+          }
         );
         if (!uploadResp.ok) {
-          throw new Error("KPI banner upload failed");
+          alert(t("edit.cms_save_failed"));
+          return false;
         }
         const uploadObj = await uploadResp.json();
-        // Trust backend for the real URL (handles extension correctly).
         const uploadedUrl = uploadObj?.description?.["kpi-banner"];
         if (uploadedUrl) {
           configToSave = { ...configToSave, kpiBannerUrl: uploadedUrl };
-          setTenantConfig(configToSave);
-          setKpiBannerFile(null);
-          setKpiBannerPreview("");
         }
+        // Note: we do NOT clear kpiBannerFile / preview here yet — only after
+        // the subsequent PUT succeeds, otherwise a failed PUT would lose the
+        // user's selection.
       }
 
-      const jwt = localStorage.getItem("jwt") || "";
       const response = await fetch(
         `${import.meta.env.VITE_HOST_URL_TPLANET}/api/tenant/admin-config`,
         {
@@ -221,6 +226,9 @@ const HomepageEditor = () => {
         }
       );
       if (response.ok) {
+        setTenantConfig(configToSave);
+        setKpiBannerFile(null);
+        setKpiBannerPreview("");
         setTenantConfigDirty(false);
         return true;
       }
@@ -341,11 +349,13 @@ const HomepageEditor = () => {
         }
       });
 
+      const mockupJwt = localStorage.getItem("jwt") || "";
       const response = await fetch(
         `${import.meta.env.VITE_HOST_URL_TPLANET}/api/mockup/new`,
         {
           method: "POST",
           body: form,
+          headers: mockupJwt ? { Authorization: `Bearer ${mockupJwt}` } : {},
         }
       );
 
