@@ -1,11 +1,18 @@
 // 上傳 mockup
+//
+// Note: /api/mockup/new is auth-gated server-side (Bearer JWT required; caller
+// must be tenant hosters[0] or a YAML superuser). The `email` POST field is
+// ignored by the backend — it derives the email from the JWT user to prevent
+// impersonation.
 export async function mockup_upload(form) {
   try {
+    const jwt = (typeof localStorage !== "undefined" && localStorage.getItem("jwt")) || "";
     const response = await fetch(
       `${import.meta.env.VITE_HOST_URL_TPLANET}/api/mockup/new`,
       {
         method: "POST",
         body: form,
+        headers: jwt ? { Authorization: `Bearer ${jwt}` } : {},
       }
     );
 

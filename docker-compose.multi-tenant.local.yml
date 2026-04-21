@@ -20,6 +20,7 @@ services:
     volumes:
       - /var/www/mt-dev-static/news:/server/backend/static/news
       - /var/www/mt-dev-static/uploads:/server/backend/static/uploads
+      - /var/www/mt-dev-static/new_mockup:/server/backend/static/new_mockup
     command: sh -c "pip install gunicorn && cd /server/backend && python manage.py migrate --noinput && gunicorn backend.wsgi:application --bind 0.0.0.0:5567"
     ports: !override
       - "5580:5567"
