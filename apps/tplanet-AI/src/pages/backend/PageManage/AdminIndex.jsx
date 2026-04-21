@@ -20,6 +20,11 @@ const HomepageEditor = () => {
   });
   const [tenantConfigDirty, setTenantConfigDirty] = useState(false);
 
+  // KPI banner upload state (handled separately since the file posts to mockup
+  // endpoint before the tenant-config PUT)
+  const [kpiBannerFile, setKpiBannerFile] = useState(null);
+  const [kpiBannerPreview, setKpiBannerPreview] = useState("");
+
   // 新增：實際要上傳的檔案
   const [files, setFiles] = useState({});
   const [errors, setErrors] = useState({});
@@ -145,9 +150,64 @@ const HomepageEditor = () => {
     setTenantConfigDirty(true);
   };
 
+  // KPI banner file selection (validation + preview only; actual upload in handleSave)
+  const handleKpiBannerSelect = (file) => {
+    const maxSize = 5 * 1024 * 1024; // 5MB
+    const allowedTypes = ["image/jpeg", "image/png", "image/jpg", "image/gif", "image/webp"];
+    if (!allowedTypes.includes(file.type)) {
+      alert(t("edit.cms_upload_format"));
+      return;
+    }
+    if (file.size > maxSize) {
+      alert(t("edit.cms_upload_size"));
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (e) => setKpiBannerPreview(e.target.result);
+    reader.readAsDataURL(file);
+    setKpiBannerFile(file);
+    setTenantConfigDirty(true);
+  };
+
+  const clearKpiBannerSelection = () => {
+    setKpiBannerFile(null);
+    setKpiBannerPreview("");
+  };
+
   // Save tenant config
+  //
+  // Flow:
+  //   1. If admin chose a new KPI banner file, POST it to /api/mockup/new first.
+  //      Backend stores the file under /static/new_mockup/<email>/kpi-banner.<ext>
+  //      and returns the real URL (with correct extension).
+  //   2. PUT the tenant config (including the newly returned kpiBannerUrl) to
+  //      /api/tenant/admin-config.
   const saveTenantConfig = async () => {
     try {
+      let configToSave = { ...tenantConfig };
+
+      if (kpiBannerFile) {
+        const form = new FormData();
+        form.append("email", localStorage.getItem("email"));
+        form.append("kpi-banner", kpiBannerFile, kpiBannerFile.name);
+        const uploadResp = await fetch(
+          `${import.meta.env.VITE_HOST_URL_TPLANET}/api/mockup/new`,
+          { method: "POST", body: form }
+        );
+        if (!uploadResp.ok) {
+          throw new Error("KPI banner upload failed");
+        }
+        const uploadObj = await uploadResp.json();
+        // Trust backend for the real URL (handles extension correctly).
+        const uploadedUrl = uploadObj?.description?.["kpi-banner"];
+        if (uploadedUrl) {
+          configToSave = { ...configToSave, kpiBannerUrl: uploadedUrl };
+          setTenantConfig(configToSave);
+          setKpiBannerFile(null);
+          setKpiBannerPreview("");
+        }
+      }
+
       const jwt = localStorage.getItem("jwt") || "";
       const response = await fetch(
         `${import.meta.env.VITE_HOST_URL_TPLANET}/api/tenant/admin-config`,
@@ -157,7 +217,7 @@ const HomepageEditor = () => {
             "Content-Type": "application/json",
             ...(jwt ? { Authorization: `Bearer ${jwt}` } : {}),
           },
-          body: JSON.stringify(tenantConfig),
+          body: JSON.stringify(configToSave),
         }
       );
       if (response.ok) {
@@ -551,21 +611,87 @@ const HomepageEditor = () => {
               />
             </div>
 
-            {/* KPI banner URL (Slice 3 會補上傳 UI；先留 text 讓 admin 可直接填) */}
+            {/* KPI banner: preview + upload or URL */}
             <div className="md:col-span-2">
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                KPI 頁 Banner URL
+                KPI 頁 Banner
                 <span className="ml-1 text-xs text-gray-400">
-                  (留空則使用預設 banner)
+                  (留空則使用預設 banner；建議 2400×400，6:1)
                 </span>
               </label>
-              <input
-                type="text"
-                value={tenantConfig.kpiBannerUrl}
-                onChange={(e) => updateTenantConfig("kpiBannerUrl", e.target.value)}
-                placeholder="/static/new_mockup/.../kpi-banner.png"
-                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              />
+              <div className="flex flex-col md:flex-row gap-4 items-start">
+                <div className="flex-shrink-0 w-full md:w-56 h-20 bg-gray-100 rounded border border-gray-200 overflow-hidden flex items-center justify-center">
+                  {kpiBannerPreview ? (
+                    <img
+                      src={kpiBannerPreview}
+                      alt="KPI banner preview"
+                      className="object-contain h-full w-full"
+                    />
+                  ) : tenantConfig.kpiBannerUrl ? (
+                    <img
+                      src={
+                        tenantConfig.kpiBannerUrl.startsWith("http")
+                          ? tenantConfig.kpiBannerUrl
+                          : `${import.meta.env.VITE_HOST_URL_TPLANET}${tenantConfig.kpiBannerUrl}`
+                      }
+                      alt="KPI banner"
+                      className="object-contain h-full w-full"
+                      onError={(e) => {
+                        e.currentTarget.style.display = "none";
+                      }}
+                    />
+                  ) : (
+                    <span className="text-xs text-gray-400">尚未設定</span>
+                  )}
+                </div>
+                <div className="flex-1 w-full">
+                  <input
+                    type="text"
+                    value={tenantConfig.kpiBannerUrl}
+                    onChange={(e) => updateTenantConfig("kpiBannerUrl", e.target.value)}
+                    placeholder="/static/new_mockup/.../kpi-banner.png"
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                  <div className="mt-2 flex gap-2 items-center">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        document.getElementById("kpi-banner-upload").click()
+                      }
+                      className="bg-[#317EE0] text-white px-4 py-2 rounded hover:bg-blue-600 text-sm"
+                    >
+                      選擇圖片上傳
+                    </button>
+                    {kpiBannerFile && (
+                      <>
+                        <span className="text-xs text-gray-500 truncate max-w-[180px]">
+                          {kpiBannerFile.name}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={clearKpiBannerSelection}
+                          className="text-sm text-gray-500 hover:text-gray-700"
+                        >
+                          取消選擇
+                        </button>
+                      </>
+                    )}
+                    <input
+                      id="kpi-banner-upload"
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) =>
+                        e.target.files[0] &&
+                        handleKpiBannerSelect(e.target.files[0])
+                      }
+                    />
+                  </div>
+                  <p className="mt-1 text-xs text-gray-500">
+                    儲存後上傳並自動更新 URL（副檔名以實際檔案為準）。
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
         </div>
