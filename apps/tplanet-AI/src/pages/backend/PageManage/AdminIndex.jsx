@@ -10,9 +10,13 @@ const HomepageEditor = () => {
   // Tenant config state
   const [tenantConfig, setTenantConfig] = useState({
     name: "",
+    brandName: "",
     primaryColor: "#1976d2",
     secondaryColor: "#424242",
     logoUrl: "",
+    kpiBannerUrl: "",
+    socialLinks: { facebook: "", youtube: "" },
+    privacyUrl: "",
   });
   const [tenantConfigDirty, setTenantConfigDirty] = useState(false);
 
@@ -58,17 +62,31 @@ const HomepageEditor = () => {
   useEffect(() => {
     const loadTenantConfig = async () => {
       try {
+        const jwt = localStorage.getItem("jwt") || "";
         const response = await fetch(
           `${import.meta.env.VITE_HOST_URL_TPLANET}/api/tenant/admin-config`,
-          { headers: { Accept: "application/json" } }
+          {
+            headers: {
+              Accept: "application/json",
+              ...(jwt ? { Authorization: `Bearer ${jwt}` } : {}),
+            },
+          }
         );
         if (response.ok) {
           const config = await response.json();
           setTenantConfig({
             name: config.name || "",
+            brandName: config.brandName || "",
             primaryColor: config.primaryColor || "#1976d2",
             secondaryColor: config.secondaryColor || "#424242",
             logoUrl: config.logoUrl || "",
+            kpiBannerUrl: config.kpiBannerUrl || "",
+            socialLinks: {
+              facebook: config.socialLinks?.facebook || "",
+              youtube: config.socialLinks?.youtube || "",
+              ...(config.socialLinks || {}),
+            },
+            privacyUrl: config.privacyUrl || "",
           });
         }
       } catch (e) {
@@ -112,20 +130,33 @@ const HomepageEditor = () => {
     mockup_get();
   }, []);
 
-  // Update tenant config field
+  // Update tenant config field (flat key)
   const updateTenantConfig = (key, value) => {
     setTenantConfig((prev) => ({ ...prev, [key]: value }));
+    setTenantConfigDirty(true);
+  };
+
+  // Update nested socialLinks entry (facebook / youtube / ...)
+  const updateSocialLink = (platform, value) => {
+    setTenantConfig((prev) => ({
+      ...prev,
+      socialLinks: { ...(prev.socialLinks || {}), [platform]: value },
+    }));
     setTenantConfigDirty(true);
   };
 
   // Save tenant config
   const saveTenantConfig = async () => {
     try {
+      const jwt = localStorage.getItem("jwt") || "";
       const response = await fetch(
         `${import.meta.env.VITE_HOST_URL_TPLANET}/api/tenant/admin-config`,
         {
           method: "PUT",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            ...(jwt ? { Authorization: `Bearer ${jwt}` } : {}),
+          },
           body: JSON.stringify(tenantConfig),
         }
       );
@@ -454,6 +485,88 @@ const HomepageEditor = () => {
               style={{ backgroundColor: tenantConfig.secondaryColor }}
             />
             <span className="text-sm">輔助色</span>
+          </div>
+        </div>
+
+        {/* 品牌 / 社群 / 隱私 / KPI banner */}
+        <div className="mt-6 pt-6 border-t border-gray-200">
+          <h3 className="text-lg font-semibold mb-4">品牌 / 社群 / 隱私</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* 品牌名稱 */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                品牌名稱
+                <span className="ml-1 text-xs text-gray-400">
+                  (footer 顯示，留空則沿用站台名稱)
+                </span>
+              </label>
+              <input
+                type="text"
+                value={tenantConfig.brandName}
+                onChange={(e) => updateTenantConfig("brandName", e.target.value)}
+                placeholder="Second Home"
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              />
+            </div>
+
+            {/* 隱私權政策 URL */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                隱私權政策 URL
+              </label>
+              <input
+                type="text"
+                value={tenantConfig.privacyUrl}
+                onChange={(e) => updateTenantConfig("privacyUrl", e.target.value)}
+                placeholder="https://privacy.example.com/"
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              />
+            </div>
+
+            {/* Facebook */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Facebook URL
+              </label>
+              <input
+                type="text"
+                value={tenantConfig.socialLinks?.facebook || ""}
+                onChange={(e) => updateSocialLink("facebook", e.target.value)}
+                placeholder="https://www.facebook.com/..."
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              />
+            </div>
+
+            {/* YouTube */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                YouTube URL
+              </label>
+              <input
+                type="text"
+                value={tenantConfig.socialLinks?.youtube || ""}
+                onChange={(e) => updateSocialLink("youtube", e.target.value)}
+                placeholder="https://www.youtube.com/..."
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              />
+            </div>
+
+            {/* KPI banner URL (Slice 3 會補上傳 UI；先留 text 讓 admin 可直接填) */}
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                KPI 頁 Banner URL
+                <span className="ml-1 text-xs text-gray-400">
+                  (留空則使用預設 banner)
+                </span>
+              </label>
+              <input
+                type="text"
+                value={tenantConfig.kpiBannerUrl}
+                onChange={(e) => updateTenantConfig("kpiBannerUrl", e.target.value)}
+                placeholder="/static/new_mockup/.../kpi-banner.png"
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              />
+            </div>
           </div>
         </div>
       </div>
